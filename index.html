@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Pro - Festival Hoa Sa Đéc 2025</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #chat-container { width: 400px; max-width: 100%; height: 600px; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); display: flex; flex-direction: column; overflow: hidden; }
+        #chat-header { background-color: #0084ff; color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #chat-box { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .message { max-width: 80%; padding: 10px 15px; border-radius: 18px; line-height: 1.4; word-wrap: break-word; }
+        .user-msg { background-color: #e4e6eb; color: #050505; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .bot-msg { background-color: #0084ff; color: white; align-self: flex-start; border-bottom-left-radius: 4px; }
+        #input-container { display: flex; padding: 10px; border-top: 1px solid #ddd; }
+        #user-input { flex-grow: 1; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; font-size: 16px; outline: none; }
+        #user-input:focus { border-color: #0084ff; }
+        #send-btn { background-color: #0084ff; color: white; border: none; border-radius: 50%; width: 40px; height: 40px; margin-left: 10px; cursor: pointer; font-size: 18px; font-weight: bold; }
+        #send-btn:hover { background-color: #006adc; }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="chat-header">Sen nhỏ (Bản Pro)</div>
+        <div id="chat-box" aria-live="polite">
+            <div class="message bot-msg">
+                Chào bạn! Mình là Sen nhỏ, trợ lý ảo "xịn" của Festival Hoa Sa Đéc. Bạn hỏi gì mình cũng biết (trong phạm vi Lễ hội nha)!
+            </div>
+        </div>
+        <div id="input-container">
+            <input type="text" id="user-input" placeholder="Hỏi Sen nhỏ nè...">
+            <button id="send-btn" aria-label="Gửi tin nhắn">→</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        
+        // Địa chỉ của "Trái Tim" Backend
+        const backendUrl = 'http://localhost:3000/chat';
+
+        sendBtn.addEventListener('click', handleSendMessage);
+        userInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                handleSendMessage();
+            }
+        });
+
+        // Hàm Gửi tin nhắn (đã nâng cấp)
+        async function handleSendMessage() {
+            const userText = userInput.value.trim();
+            if (userText === "") return;
+
+            displayMessage(userText, 'user-msg');
+            userInput.value = ""; // Xóa input ngay
+
+            // Giả lập bot đang gõ...
+            const typingMsg = displayMessage("Sen nhỏ đang gõ...", 'bot-msg');
+
+            try {
+                // Gọi "Trái Tim" Backend
+                const response = await fetch(backendUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: userText }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Sen nhỏ đang bị lag, thử lại sau!');
+                }
+
+                const data = await response.json();
+                const botResponse = data.botResponse;
+
+                // Xóa tin "đang gõ" và hiển thị câu trả lời thật
+                chatBox.removeChild(typingMsg);
+                displayMessage(botResponse, 'bot-msg');
+
+            } catch (error) {
+                // Xóa tin "đang gõ" và báo lỗi
+                chatBox.removeChild(typingMsg);
+                displayMessage(`Huhu lỗi rồi: ${error.message}`, 'bot-msg');
+            }
+        }
+
+        // Hàm hiển thị tin nhắn (y chang cũ, nhưng trả về msgDiv)
+        function displayMessage(message, msgClass) {
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message', msgClass);
+            msgDiv.textContent = message;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return msgDiv; // Trả về để mình có thể xóa nó (nếu là tin 'typing')
+        }
+    </script>
+</body>
+</html>
